@@ -7,6 +7,7 @@ import socket
 import threading
 from flask import Flask, request, session, jsonify, abort, send_file, render_template, redirect
 from flask_cachebuster import CacheBuster
+from flask_compress import Compress
 from flask_login import LoginManager, login_user, current_user, login_required
 from flask_cors import CORS
 import threading
@@ -59,6 +60,10 @@ app.secret_key = os.getenv("GRADIO_KEY", "secret")
 login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
+
+app.config["COMPRESS_REGISTER"] = False # disable default compression of all eligible requests
+compress = Compress()
+compress.init_app(app)
 
 # Hide Flask default message
 cli = sys.modules['flask.cli']
@@ -136,6 +141,7 @@ def main():
 
 
 @app.route("/static/<path:path>", methods=["GET"])
+@compress.compressed()
 def static_resource(path):
     if app.interface.share:
         return redirect(GRADIO_STATIC_ROOT + path)

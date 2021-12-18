@@ -1,17 +1,12 @@
 # Python build
 .eggs/
-gradio.egg-info/*
-!gradio.egg-info/requires.txt
-!gradio.egg-info/PKG-INFO
+*.egg-info
 dist/
 *.pyc
 __pycache__/
 *.py[cod]
 *$py.class
 build/
-
-# JS build
-gradio/templates/frontend/static
 
 # Secrets
 .env

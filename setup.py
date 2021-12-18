@@ -30,5 +30,6 @@ setup(
         'Flask-Cors>=3.0.8',
         'flask-cachebuster',
         'Flask-Login',
+        'Flask-Compress==1.10.1',
     ],
 )
