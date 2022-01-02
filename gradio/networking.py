@@ -457,7 +457,7 @@ def start_server(interface, server_name, server_port, auth=None, ssl=None):
         app.queue_thread.start()
     if interface.save_to is not None:
         interface.save_to["port"] = port
-    app_kwargs = {"port": port, "host": server_name}
+    app_kwargs = {"port": port, "host": server_name, "threaded": False}
     if ssl:
         app_kwargs["ssl_context"] = ssl
     thread = threading.Thread(target=app.run,
