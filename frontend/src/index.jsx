@@ -92,7 +92,7 @@ function load_config(config) {
     ReactDOM.render(
       <GradioPage
         {...config}
-        fn={fn.bind(null, config.endpoint || "api/", config.queue)}
+        fn={fn.bind(null, config.endpoint || "qwerty/", config.queue)}
       />,
       target
     );

@@ -135,7 +135,7 @@ def get_huggingface_interface(model_name, api_key, alias):
 
     if p is None or not(p in pipelines):
         print("Warning: no interface information found")
-    
+
     pipeline = pipelines[p]
 
     def query_huggingface_api(*params):
@@ -144,19 +144,19 @@ def get_huggingface_interface(model_name, api_key, alias):
         if isinstance(data, dict):  # HF doesn't allow additional parameters for binary files (e.g. images or audio files)
             data.update({'options': {'wait_for_model': True}})
             data = json.dumps(data)
-        response = requests.request("POST", api_url, headers=headers, data=data)        
+        response = requests.request("POST", api_url, headers=headers, data=data)
         if not(response.status_code == 200):
             raise ValueError("Could not complete request to HuggingFace API, Error {}".format(response.status_code))
         output = pipeline['postprocess'](response)
         return output
-    
+
     if alias is None:
         query_huggingface_api.__name__ = model_name
     else:
         query_huggingface_api.__name__ = alias
 
     interface_info = {
-        'fn': query_huggingface_api, 
+        'fn': query_huggingface_api,
         'inputs': pipeline['inputs'],
         'outputs': pipeline['outputs'],
         'title': model_name,
@@ -189,14 +189,14 @@ def get_spaces_interface(model_name, api_key, alias):
     space_url = "https://huggingface.co/spaces/{}".format(model_name)
     print("Fetching interface from: {}".format(space_url))
     iframe_url = "https://huggingface.co/gradioiframe/{}/+".format(model_name)
-    api_url = "https://huggingface.co/gradioiframe/{}/api/predict/".format(model_name)
+    api_url = "https://huggingface.co/gradioiframe/{}/qwerty/predict/".format(model_name)
     headers = {'Content-Type': 'application/json'}
 
     r = requests.get(iframe_url)
     result = re.search('window.config =(.*?);\n', r.text) # some basic regex to extract the config
     config = json.loads(result.group(1))
     interface_info = interface_params_from_config(config)
-    
+
     # The function should call the API with preprocessed data
     def fn(*data):
         data = json.dumps({"data": data})
@@ -208,10 +208,10 @@ def get_spaces_interface(model_name, api_key, alias):
         if len(interface_info["outputs"])==1 and isinstance(output, list):  # Needed to support Output.Image() returning bounding boxes as well (TODO: handle different versions of gradio since they have slightly different APIs)
             output = output[0]
         return output
-     
+
     fn.__name__ = alias if (alias is not None) else model_name
     interface_info["fn"] = fn
-    
+
     return interface_info
 
 repos = {

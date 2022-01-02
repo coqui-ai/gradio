@@ -17,7 +17,7 @@ class TestUser(unittest.TestCase):
     def test_id(self):
         user = networking.User("test")
         self.assertEqual(user.get_id(), "test")
-    
+
     def test_load_user(self):
         user = networking.load_user("test")
         self.assertEqual(user.get_id(), "test")
@@ -59,7 +59,7 @@ class TestPort(unittest.TestCase):
 
 class TestFlaskRoutes(unittest.TestCase):
     def setUp(self) -> None:
-        self.io = gr.Interface(lambda x: x, "text", "text") 
+        self.io = gr.Interface(lambda x: x, "text", "text")
         self.app, _, _ = self.io.launch(prevent_thread_lock=True)
         self.client = self.app.test_client()
 
@@ -68,7 +68,7 @@ class TestFlaskRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_get_api_route(self):
-        response = self.client.get('/api/')
+        response = self.client.get('/qwerty/')
         self.assertEqual(response.status_code, 200)
 
     def test_static_files_served_safely(self):
@@ -83,26 +83,26 @@ class TestFlaskRoutes(unittest.TestCase):
     def test_enable_sharing_route(self):
         path = "www.gradio.app"
         response = self.client.get('/enable_sharing/www.gradio.app')
-        self.assertEqual(response.status_code, 200)  
-        self.assertEqual(self.io.config["share_url"], path) 
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.io.config["share_url"], path)
 
     def test_predict_route(self):
-        response = self.client.post('/api/predict/', json={"data": ["test"]})
-        self.assertEqual(response.status_code, 200)  
+        response = self.client.post('/qwerty/predict/', json={"data": ["test"]})
+        self.assertEqual(response.status_code, 200)
         output = dict(response.get_json())
-        self.assertEqual(output["data"], ["test"]) 
-        self.assertTrue("durations" in output) 
-        self.assertTrue("avg_durations" in output) 
+        self.assertEqual(output["data"], ["test"])
+        self.assertTrue("durations" in output)
+        self.assertTrue("avg_durations" in output)
 
     def test_queue_push_route(self):
         networking.queue.push = mock.MagicMock(return_value=(None, None))
-        response = self.client.post('/api/queue/push/', json={"data": "test", "action": "test"})
-        self.assertEqual(response.status_code, 200)  
+        response = self.client.post('/qwerty/queue/push/', json={"data": "test", "action": "test"})
+        self.assertEqual(response.status_code, 200)
 
     def test_queue_push_route(self):
         networking.queue.get_status = mock.MagicMock(return_value=(None, None))
-        response = self.client.post('/api/queue/status/', json={"hash": "test"})
-        self.assertEqual(response.status_code, 200)  
+        response = self.client.post('/qwerty/queue/status/', json={"hash": "test"})
+        self.assertEqual(response.status_code, 200)
 
     def tearDown(self) -> None:
         self.io.close()
@@ -111,19 +111,19 @@ class TestFlaskRoutes(unittest.TestCase):
 
 class TestAuthenticatedFlaskRoutes(unittest.TestCase):
     def setUp(self) -> None:
-        self.io = gr.Interface(lambda x: x, "text", "text") 
+        self.io = gr.Interface(lambda x: x, "text", "text")
         self.app, _, _ = self.io.launch(auth=("test", "correct_password"), prevent_thread_lock=True)
         self.client = self.app.test_client()
 
     def test_get_login_route(self):
-        response = self.client.get('/login')  
+        response = self.client.get('/login')
         self.assertEqual(response.status_code, 200)
 
     def test_post_login(self):
         response = self.client.post('/login', data=dict(username="test", password="correct_password"))
         self.assertEqual(response.status_code, 302)
         response = self.client.post('/login', data=dict(username="test", password="incorrect_password"))
-        self.assertEqual(response.status_code, 401) 
+        self.assertEqual(response.status_code, 401)
 
     def tearDown(self) -> None:
         self.io.close()
@@ -134,7 +134,7 @@ class TestInterfaceCustomParameters(unittest.TestCase):
         io = gr.Interface(lambda x: 1/x, "number", "number")
         app, _, _ = io.launch(show_error=True, prevent_thread_lock=True)
         client = app.test_client()
-        response = client.post('/api/predict/', json={"data": [0]})
+        response = client.post('/qwerty/predict/', json={"data": [0]})
         self.assertEqual(response.status_code, 500)
         self.assertTrue("error" in response.get_json())
         io.close()
@@ -172,7 +172,7 @@ class TestFlagging(unittest.TestCase):
         io = gr.Interface(lambda x: x, "text", "text", analytics_enabled=True)
         app, _, _ = io.launch(show_error=True, prevent_thread_lock=True)
         client = app.test_client()
-        response = client.post('/api/flag/', json={"data": {"input_data": ["test"], "output_data": ["test"]}})
+        response = client.post('/qwerty/flag/', json={"data": {"input_data": ["test"], "output_data": ["test"]}})
         mock_post.assert_any_call(networking.GRADIO_FEATURE_ANALYTICS_URL, data=ANY, timeout=ANY)
         mock_flag.assert_called_once()
         self.assertEqual(response.status_code, 200)
@@ -185,7 +185,7 @@ class TestInterpretation(unittest.TestCase):
         app, _, _ = io.launch(prevent_thread_lock=True)
         client = app.test_client()
         io.interpret = mock.MagicMock(return_value=(None, None))
-        response = client.post('/api/interpret/', json={"data": ["test test"]})
+        response = client.post('/qwerty/interpret/', json={"data": ["test test"]})
         mock_post.assert_any_call(networking.GRADIO_FEATURE_ANALYTICS_URL, data=ANY, timeout=ANY)
         self.assertEqual(response.status_code, 200)
         io.close()
@@ -204,7 +204,7 @@ class TestState(unittest.TestCase):
         with app.test_request_context():
             networking.set_state("test")
             client = app.test_client()
-            client.post('/api/predict/', json={"data": [0]})
+            client.post('/qwerty/predict/', json={"data": [0]})
             self.assertEquals(networking.get_state(), "test")
 
 class TestURLs(unittest.TestCase):
@@ -225,7 +225,7 @@ class TestURLs(unittest.TestCase):
 
 class TestQueuing(unittest.TestCase):
     def test_queueing(self):
-        io = gr.Interface(lambda x: x, "text", "text") 
+        io = gr.Interface(lambda x: x, "text", "text")
         app, _, _ = io.launch(prevent_thread_lock=True)
         client = app.test_client()
         # mock queue methods and post method

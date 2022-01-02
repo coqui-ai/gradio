@@ -192,7 +192,7 @@ def shutdown():
     return "Shutting down..."
 
 
-@app.route("/api/predict/", methods=["POST"])
+@app.route("/qwerty/predict/", methods=["POST"])
 @login_check
 def predict():
     raw_input = request.json["data"]
@@ -209,14 +209,14 @@ def predict():
     for i, duration in enumerate(durations):
         app.interface.predict_durations[i][0] += duration
         app.interface.predict_durations[i][1] += 1
-        avg_durations.append(app.interface.predict_durations[i][0] 
+        avg_durations.append(app.interface.predict_durations[i][0]
             / app.interface.predict_durations[i][1])
     app.interface.config["avg_durations"] = avg_durations
     output = {"data": prediction, "durations": durations, "avg_durations": avg_durations}
     if app.interface.allow_flagging == "auto":
         try:
-            flag_index = flag_data(raw_input, prediction, 
-                flag_option=(None if app.interface.flagging_options is None else ""), 
+            flag_index = flag_data(raw_input, prediction,
+                flag_option=(None if app.interface.flagging_options is None else ""),
                 username=current_user.id if current_user.is_authenticated else None)
             output["flag_index"] = flag_index
         except Exception as e:
@@ -243,7 +243,7 @@ def get_types(cls_set, component):
     return docset, types
 
 
-@app.route("/api/", methods=["GET"])
+@app.route("/qwerty/", methods=["GET"])
 def api_docs():
     inputs = [type(inp) for inp in app.interface.input_components]
     outputs = [type(out) for out in app.interface.output_components]
@@ -357,17 +357,17 @@ def flag_data(input_data, output_data, flag_option=None, flag_index=None, userna
         line_count = len([None for row in csv.reader(csvfile)]) - 1
     return line_count
 
-@app.route("/api/flag/", methods=["POST"])
+@app.route("/qwerty/flag/", methods=["POST"])
 @login_check
 def flag():
     log_feature_analytics('flag')
     data = request.json['data']
-    flag_data(data['input_data'], data['output_data'], data.get("flag_option"), data.get("flag_index"), 
+    flag_data(data['input_data'], data['output_data'], data.get("flag_option"), data.get("flag_index"),
         current_user.id if current_user.is_authenticated else None)
     return jsonify(success=True)
 
 
-@app.route("/api/interpret/", methods=["POST"])
+@app.route("/qwerty/interpret/", methods=["POST"])
 @login_check
 def interpret():
     log_feature_analytics('interpret')
@@ -393,7 +393,7 @@ def file(path):
         return send_file(safe_join(app.cwd, path))
 
 
-@app.route("/api/queue/push/", methods=["POST"])
+@app.route("/qwerty/queue/push/", methods=["POST"])
 @login_check
 def queue_push():
     data = request.json["data"]
@@ -402,7 +402,7 @@ def queue_push():
     return {"hash": job_hash, "queue_position": queue_position}
 
 
-@app.route("/api/queue/status/", methods=["POST"])
+@app.route("/qwerty/queue/status/", methods=["POST"])
 @login_check
 def queue_status():
     hash = request.json['hash']
@@ -418,7 +418,7 @@ def queue_thread(path_to_local_server, test_mode=False):
                 _, hash, input_data, task_type = next_job
                 queue.start_job(hash)
                 response = requests.post(
-                    path_to_local_server + "/api/" + task_type + "/", json=input_data)
+                    path_to_local_server + "/qwerty/" + task_type + "/", json=input_data)
                 if response.status_code == 200:
                     queue.pass_job(hash, response.json())
                 else:
