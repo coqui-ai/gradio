@@ -154,7 +154,7 @@ class Label(OutputComponent):
             "label": {},
         }
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (Union[str, Dict[str, number]]): Either a string representing the main category label, or a dictionary with category keys mapping to confidence levels.
         """
@@ -239,11 +239,11 @@ class Image(OutputComponent):
         y = processing_utils.decode_base64_to_file(x).name
         return y
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to image file
         """
-        return self.save_flagged_file(dir, label, data, encryption_key)
+        return self.save_flagged_file(dir, label, data)
 
 
 class Video(OutputComponent):
@@ -294,11 +294,11 @@ class Video(OutputComponent):
     def deserialize(self, x):
         return processing_utils.decode_base64_to_file(x).name
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to image file
         """
-        return self.save_flagged_file(dir, label, data['data'], encryption_key)
+        return self.save_flagged_file(dir, label, data['data'])
 
 
 class KeyValues(OutputComponent):
@@ -336,7 +336,7 @@ class KeyValues(OutputComponent):
             "key_values": {},
         }
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         return json.dumps(data)
 
     def restore_flagged(self, data):
@@ -382,7 +382,7 @@ class HighlightedText(OutputComponent):
         """
         return y
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         return json.dumps(data)
 
     def restore_flagged(self, data):
@@ -437,11 +437,11 @@ class Audio(OutputComponent):
     def deserialize(self, x):
         return processing_utils.decode_base64_to_file(x).name
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to audio file
         """
-        return self.save_flagged_file(dir, label, data, encryption_key)
+        return self.save_flagged_file(dir, label, data)
 
 
 class JSON(OutputComponent):
@@ -476,7 +476,7 @@ class JSON(OutputComponent):
             "json": {},
         }
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         return json.dumps(data)
 
     def restore_flagged(self, data):
@@ -546,11 +546,11 @@ class File(OutputComponent):
             "data": processing_utils.encode_file_to_base64(y, header=False)
         }
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to image file
         """
-        return self.save_flagged_file(dir, label, data["data"], encryption_key)
+        return self.save_flagged_file(dir, label, data["data"])
 
 
 class Dataframe(OutputComponent):
@@ -623,7 +623,7 @@ class Dataframe(OutputComponent):
             raise ValueError("Unknown type: " + self.type +
                              ". Please choose from: 'pandas', 'numpy', 'array'.")
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (List[List[Union[str, float]]]) 2D array
         """
@@ -679,11 +679,11 @@ class Carousel(OutputComponent):
             raise ValueError(
                 "Unknown type. Please provide a list for the Carousel.")
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         return json.dumps([
             [
                 component.save_flagged(
-                    dir, f"{label}_{j}", data[i][j], encryption_key)
+                    dir, f"{label}_{j}", data[i][j])
                 for j, component in enumerate(self.components)
             ] for i, sample in enumerate(data)])
 
@@ -755,7 +755,7 @@ class Timeseries(OutputComponent):
 
         }
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (List[List[Union[str, float]]]) 2D array
         """

@@ -33,7 +33,7 @@ class Component():
         """
         return {}
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Saves flagged data from component
         """
@@ -45,10 +45,10 @@ class Component():
         """
         return data
 
-    def save_flagged_file(self, dir, label, data, encryption_key):
+    def save_flagged_file(self, dir, label, data):
         if data is None:
             return None
-        file = processing_utils.decode_base64_to_file(data, encryption_key)
+        file = processing_utils.decode_base64_to_file(data)
         label = "".join([char for char in label if char.isalnum() or char in "._- "])
         old_file_name = file.name
         output_dir = os.path.join(dir, label)

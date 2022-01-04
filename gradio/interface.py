@@ -18,7 +18,7 @@ import time
 import warnings
 import webbrowser
 import weakref
-from gradio import networking, strings, utils, encryptor, queue
+from gradio import networking, strings, utils
 from gradio.inputs import get_input_instance
 from gradio.outputs import get_output_instance
 from gradio.interpretation import quantify_difference_in_label, get_regression_or_classification_value
@@ -64,8 +64,8 @@ class Interface:
                  capture_session=None, interpretation=None, num_shap=2.0, theme=None, repeat_outputs_per_model=True,
                  title=None, description=None, article=None, thumbnail=None,
                  css=None, server_port=None, server_name=None, height=500, width=900,
-                 allow_screenshot=True, allow_flagging=None, flagging_options=None, encrypt=False,
-                 show_tips=None, flagging_dir="flagged", analytics_enabled=None, enable_queue=None, api_mode=None):
+                 allow_screenshot=True, allow_flagging=None, flagging_options=None,
+                 show_tips=None, flagging_dir="flagged", analytics_enabled=None, api_mode=None):
         """
         Parameters:
         fn (Callable): the function to wrap an interface around.
@@ -88,11 +88,7 @@ class Interface:
         allow_screenshot (bool): if False, users will not see a button to take a screenshot of the interface.
         allow_flagging (bool): if False, users will not see a button to flag an input and output.
         flagging_options (List[str]): if not None, provides options a user must select when flagging.
-        encrypt (bool): If True, flagged data will be encrypted by key provided by creator at launch
         flagging_dir (str): what to name the dir where flagged data is stored.
-        show_tips (bool): DEPRECATED. if True, will occasionally show tips about new Gradio features
-        enable_queue (bool): DEPRECATED. if True, inference requests will be served through a queue instead of with parallel threads. Required for longer inference times (> 1min) to prevent timeout.  
-        api_mode (bool): DEPRECATED. If True, will skip preprocessing steps when the Interface is called() as a function (should remain False unless the Interface is loaded from an external repo)
         """
         if not isinstance(fn, list):
             fn = [fn]
@@ -175,26 +171,14 @@ class Interface:
         self.analytics_enabled = analytics_enabled if analytics_enabled is not None else os.getenv("GRADIO_ANALYTICS_ENABLED", "True")=="True"
         self.flagging_options = flagging_options
         self.flagging_dir = flagging_dir
-        self.encrypt = encrypt
         self.save_to = None
         self.share = None
         self.share_url = None
         self.local_url = None
         self.ip_address = networking.get_local_ip_address()
-        
-        if show_tips is not None:
-            warnings.warn("The `show_tips` parameter in the `Interface` is deprecated. Please use the `show_tips` parameter in `launch()` instead")
 
         self.requires_permissions = any(
             [component.requires_permissions for component in self.input_components])
-        
-        self.enable_queue = enable_queue
-        if self.enable_queue is not None:
-            warnings.warn("The `enable_queue` parameter in the `Interface` will be deprecated. Please use the `enable_queue` parameter in `launch()` instead")
-
-        if api_mode is not None:
-            warnings.warn("The `api_mode` parameter in the `Interface` is deprecated.")
-        self.api_mode = False
 
         if self.capture_session:
             try:
@@ -275,7 +259,6 @@ class Interface:
             "allow_flagging": self.allow_flagging,
             "flagging_options": self.flagging_options,
             "allow_interpretation": self.interpretation is not None,
-            "queue": self.enable_queue,
             "version": pkg_resources.require("gradio")[0].version
         }
         try:
@@ -528,8 +511,6 @@ class Interface:
             thread.keep_running = False
             # Hit the server one more time to close it
             networking.url_ok(path_to_local_server)
-            if self.enable_queue:
-                queue.close()
 
     def test_launch(self):
         for predict_fn in self.predict:
@@ -550,7 +531,7 @@ class Interface:
     def launch(self, inline=None, inbrowser=None, share=False, debug=False,
                auth=None, auth_message=None, private_endpoint=None,
                prevent_thread_lock=False, show_error=True, server_name=None,
-               server_port=None, show_tips=False, enable_queue=False):
+               server_port=None):
         """
         Launches the webserver that serves the UI for the interface.
         Parameters:
@@ -566,8 +547,6 @@ class Interface:
         server_port (int): will start gradio app on this port (if available) 
         server_name (str): to make app accessible on local network, set this to "0.0.0.0".
         show_error (bool): show prediction errors in console
-        show_tips (bool): if True, will occasionally show tips about new Gradio features
-        enable_queue (bool): if True, inference requests will be served through a queue instead of with parallel threads. Required for longer inference times (> 1min) to prevent timeout.  
         Returns:
         app (flask.Flask): Flask app object
         path_to_local_server (str): Locally accessible link
@@ -581,18 +560,10 @@ class Interface:
             auth = [auth]
         self.auth = auth
         self.auth_message = auth_message
-        self.show_tips = show_tips
-
-        # Request key for encryption
-        if self.encrypt:
-            self.encryption_key = encryptor.get_key(
-                getpass.getpass("Enter key for encryption: "))
 
         # Store parameters
         server_name = server_name or self.server_name or networking.LOCALHOST_NAME
         server_port = server_port or self.server_port or networking.INITIAL_PORT_VALUE
-        if self.enable_queue is None:
-            self.enable_queue = enable_queue
 
         # Launch local flask server
         server_port, path_to_local_server, app, thread = networking.start_server(
@@ -673,7 +644,6 @@ class Interface:
             'is_sharing_on': share,
             'share_url': share_url,
             'ip_address': self.ip_address,
-            'enable_queue': self.enable_queue,
             'show_tips': self.show_tips,
             'api_mode': self.api_mode,
             'server_name': server_name,

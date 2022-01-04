@@ -6,7 +6,6 @@ import tempfile
 import shutil
 import os
 import numpy as np
-from gradio import encryptor
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore") # Ignore pydub warning if ffmpeg is not installed
@@ -134,7 +133,7 @@ def decode_base64_to_binary(encoding):
         data = encoding
     return base64.b64decode(data), extension
 
-def decode_base64_to_file(encoding, encryption_key=None, file_path=None):
+def decode_base64_to_file(encoding, file_path=None):
     data, mime_extension = decode_base64_to_binary(encoding)
     prefix, extension = None, None
     if file_path is not None:
@@ -149,8 +148,6 @@ def decode_base64_to_file(encoding, encryption_key=None, file_path=None):
         file_obj = tempfile.NamedTemporaryFile(delete=False, prefix=prefix)
     else:
         file_obj = tempfile.NamedTemporaryFile(delete=False, prefix=prefix, suffix="."+extension)
-    if encryption_key is not None:
-        data = encryptor.encrypt(encryption_key, data)
     file_obj.write(data)
     file_obj.flush()
     return file_obj

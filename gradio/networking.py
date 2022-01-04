@@ -22,8 +22,6 @@ import sys
 import csv
 import logging
 from gradio.tunneling import create_tunnel
-from gradio import encryptor
-from gradio import queue
 from functools import wraps
 import io
 import inspect
@@ -283,17 +281,16 @@ def flag_data(input_data, output_data, flag_option=None, flag_index=None, userna
     if flag_path is None:
         flag_path = os.path.join(app.cwd, app.interface.flagging_dir)
     log_fp = "{}/log.csv".format(flag_path)
-    encryption_key = app.interface.encryption_key if app.interface.encrypt else None
     is_new = not os.path.exists(log_fp)
 
     if flag_index is None:
         csv_data = []
         for i, interface in enumerate(app.interface.input_components):
             csv_data.append(interface.save_flagged(
-                flag_path, app.interface.config["input_components"][i]["label"], input_data[i], encryption_key))
+                flag_path, app.interface.config["input_components"][i]["label"], input_data[i]))
         for i, interface in enumerate(app.interface.output_components):
             csv_data.append(interface.save_flagged(
-                flag_path, app.interface.config["output_components"][i]["label"], output_data[i], encryption_key) if output_data[i] is not None else "")
+                flag_path, app.interface.config["output_components"][i]["label"], output_data[i]) if output_data[i] is not None else "")
         if flag_option is not None:
             csv_data.append(flag_option)
         if username is not None:
@@ -321,38 +318,18 @@ def flag_data(input_data, output_data, flag_option=None, flag_index=None, userna
         writer.writerows(content)
         return output.getvalue()
 
-    if app.interface.encrypt:
-        output = io.StringIO()
-        if not is_new:
-            with open(log_fp, "rb") as csvfile:
-                encrypted_csv = csvfile.read()
-                decrypted_csv = encryptor.decrypt(
-                    app.interface.encryption_key, encrypted_csv)
-                file_content = decrypted_csv.decode()
-                if flag_index is not None:
-                    file_content = replace_flag_at_index(file_content)
-                output.write(file_content)
-        writer = csv.writer(output)
-        if flag_index is None:
+    if flag_index is None:
+        with open(log_fp, "a", newline="") as csvfile:
+            writer = csv.writer(csvfile)
             if is_new:
                 writer.writerow(headers)
             writer.writerow(csv_data)
-        with open(log_fp, "wb") as csvfile:
-            csvfile.write(encryptor.encrypt(
-                app.interface.encryption_key, output.getvalue().encode()))
     else:
-        if flag_index is None:
-            with open(log_fp, "a", newline="") as csvfile:
-                writer = csv.writer(csvfile)
-                if is_new:
-                    writer.writerow(headers)
-                writer.writerow(csv_data)
-        else:
-            with open(log_fp) as csvfile:
-                file_content = csvfile.read()
-                file_content = replace_flag_at_index(file_content)
-            with open(log_fp, "w", newline="") as csvfile:  # newline parameter needed for Windows
-                csvfile.write(file_content)
+        with open(log_fp) as csvfile:
+            file_content = csvfile.read()
+            file_content = replace_flag_at_index(file_content)
+        with open(log_fp, "w", newline="") as csvfile:  # newline parameter needed for Windows
+            csvfile.write(file_content)
     with open(log_fp, "r") as csvfile:
         line_count = len([None for row in csv.reader(csvfile)]) - 1
     return line_count
@@ -380,59 +357,7 @@ def interpret():
     })
 
 
-@app.route("/file/<path:path>", methods=["GET"])
-@login_check
-def file(path):
-    if app.interface.encrypt and isinstance(app.interface.examples, str) and path.startswith(app.interface.examples):
-        with open(safe_join(app.cwd, path), "rb") as encrypted_file:
-            encrypted_data = encrypted_file.read()
-        file_data = encryptor.decrypt(
-            app.interface.encryption_key, encrypted_data)
-        return send_file(io.BytesIO(file_data), attachment_filename=os.path.basename(path))
-    else:
-        return send_file(safe_join(app.cwd, path))
-
-
-@app.route("/api/queue/push/", methods=["POST"])
-@login_check
-def queue_push():
-    data = request.json["data"]
-    action = request.json["action"]
-    job_hash, queue_position = queue.push({"data": data}, action)
-    return {"hash": job_hash, "queue_position": queue_position}
-
-
-@app.route("/api/queue/status/", methods=["POST"])
-@login_check
-def queue_status():
-    hash = request.json['hash']
-    status, data = queue.get_status(hash)
-    return {"status": status, "data": data}
-
-
-def queue_thread(path_to_local_server, test_mode=False):
-    while True:
-        try:
-            next_job = queue.pop()
-            if next_job is not None:
-                _, hash, input_data, task_type = next_job
-                queue.start_job(hash)
-                response = requests.post(
-                    path_to_local_server + "/api/" + task_type + "/", json=input_data)
-                if response.status_code == 200:
-                    queue.pass_job(hash, response.json())
-                else:
-                    queue.fail_job(hash, response.text)
-            else:
-                time.sleep(1)
-        except Exception as e:
-            time.sleep(1)
-            pass
-        if test_mode:
-            break
-
-
-def start_server(interface, server_name, server_port, auth=None, ssl=None):
+def start_server(interface, server_name, server_port, auth=None):
     port = get_first_available_port(
         server_port, server_port + TRY_NUM_PORTS
     )
@@ -449,17 +374,9 @@ def start_server(interface, server_name, server_port, auth=None, ssl=None):
     app.cwd = os.getcwd()
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
-    if app.interface.enable_queue:
-        if auth is not None or app.interface.encrypt:
-            raise ValueError("Cannot queue with encryption or authentication enabled.")
-        queue.init()
-        app.queue_thread = threading.Thread(target=queue_thread, args=(path_to_local_server,))
-        app.queue_thread.start()
     if interface.save_to is not None:
         interface.save_to["port"] = port
     app_kwargs = {"port": port, "host": server_name, "threaded": False}
-    if ssl:
-        app_kwargs["ssl_context"] = ssl
     thread = threading.Thread(target=app.run,
                               kwargs=app_kwargs,
                               daemon=True)

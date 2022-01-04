@@ -520,7 +520,7 @@ class CheckboxGroup(InputComponent):
             final_scores.append(score_set)
         return final_scores
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (List[str]])
         """
@@ -860,11 +860,11 @@ class Image(InputComponent):
             output_scores = (output_scores - min_val) / (max_val - min_val)
         return output_scores.tolist()
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to image file
         """
-        return self.save_flagged_file(dir, label, data, encryption_key)
+        return self.save_flagged_file(dir, label, data)
 
     def generate_sample(self):
         return test_data.BASE64_IMAGE
@@ -938,11 +938,11 @@ class Video(InputComponent):
     def preprocess_example(self, x):
         return processing_utils.encode_file_to_base64(x, type="video")
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to video file
         """
-        return self.save_flagged_file(dir, label, None if data is None else data["data"], encryption_key)
+        return self.save_flagged_file(dir, label, None if data is None else data["data"])
 
     def generate_sample(self):
         return test_data.BASE64_VIDEO
@@ -1112,11 +1112,11 @@ class Audio(InputComponent):
         return list(scores)
 
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to audio file
         """
-        return self.save_flagged_file(dir, label, None if data is None else data["data"], encryption_key)
+        return self.save_flagged_file(dir, label, None if data is None else data["data"])
 
     def generate_sample(self):
         return test_data.BASE64_AUDIO
@@ -1191,11 +1191,11 @@ class File(InputComponent):
         else:
             return [process_single_file(f) for f in x]
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (str) path to file
         """
-        return self.save_flagged_file(dir, label, None if data is None else data[0]["data"], encryption_key)
+        return self.save_flagged_file(dir, label, None if data is None else data[0]["data"])
 
     def generate_sample(self):
         return test_data.BASE64_FILE
@@ -1279,7 +1279,7 @@ class Dataframe(InputComponent):
             raise ValueError("Unknown type: " + str(self.type) +
                              ". Please choose from: 'pandas', 'numpy', 'array'.")
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (List[List[Union[str, float]]]) 2D array
         """
@@ -1343,7 +1343,7 @@ class Timeseries(InputComponent):
             dataframe = dataframe.loc[dataframe[self.x or 0] <= x["range"][1]]
         return dataframe
 
-    def save_flagged(self, dir, label, data, encryption_key):
+    def save_flagged(self, dir, label, data):
         """
         Returns: (List[List[Union[str, float]]]) 2D array
         """
