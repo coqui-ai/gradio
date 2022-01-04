@@ -60,12 +60,12 @@ class Interface:
         return interface
 
     def __init__(self, fn, inputs=None, outputs=None, verbose=None, examples=None,
-                 examples_per_page=10, live=False, layout="unaligned", show_input=True, show_output=True,
+                 examples_per_page=10, live=False, layout="unaligned", show_input=True, show_output=True, show_error=True,
                  capture_session=None, interpretation=None, num_shap=2.0, theme=None, repeat_outputs_per_model=True,
                  title=None, description=None, article=None, thumbnail=None,
                  css=None, server_port=None, server_name=None, height=500, width=900,
                  allow_screenshot=True, allow_flagging=None, flagging_options=None,
-                 show_tips=None, flagging_dir="flagged", analytics_enabled=None, api_mode=None):
+                 show_tips=None, flagging_dir="flagged", analytics_enabled=None, api_mode=False):
         """
         Parameters:
         fn (Callable): the function to wrap an interface around.
@@ -122,6 +122,8 @@ class Interface:
         self.layout = layout
         self.show_input = show_input
         self.show_output = show_output
+        self.show_error = show_error
+        self.api_mode = api_mode
         self.flag_hash = random.getrandbits(32)
         self.capture_session = capture_session
         
@@ -527,6 +529,16 @@ class Interface:
                 self.process(raw_input)
                 print("PASSED")
                 continue
+
+    def get_flask_app(self, debug=False, auth=None, auth_message=None):
+        # Set up local flask server
+        config = self.get_config_file()
+        self.config = config
+        if auth and not callable(auth) and not isinstance(auth[0], tuple) and not isinstance(auth[0], list):
+            auth = [auth]
+        self.auth = auth
+        self.auth_message = auth_message
+        return networking.build_flask_app(self, auth)
 
     def launch(self, inline=None, inbrowser=None, share=False, debug=False,
                auth=None, auth_message=None, private_endpoint=None,

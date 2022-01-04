@@ -63,10 +63,6 @@ app.config["COMPRESS_REGISTER"] = False # disable default compression of all eli
 compress = Compress()
 compress.init_app(app)
 
-# Hide Flask default message
-cli = sys.modules['flask.cli']
-cli.show_server_banner = lambda *x: None
-
 
 class User:
     def __init__(self, id):
@@ -357,12 +353,7 @@ def interpret():
     })
 
 
-def start_server(interface, server_name, server_port, auth=None):
-    port = get_first_available_port(
-        server_port, server_port + TRY_NUM_PORTS
-    )
-    url_host_name = "localhost" if server_name == "0.0.0.0" else server_name
-    path_to_local_server = "http://{}:{}/".format(url_host_name, port)
+def build_flask_app(interface, auth=None):
     if auth is not None:
         if not callable(auth):
             app.auth = {account[0]: account[1] for account in auth}
@@ -372,6 +363,16 @@ def start_server(interface, server_name, server_port, auth=None):
         app.auth = None
     app.interface = interface
     app.cwd = os.getcwd()
+    return app
+
+
+def start_server(interface, server_name, server_port, auth=None):
+    port = get_first_available_port(
+        server_port, server_port + TRY_NUM_PORTS
+    )
+    url_host_name = "localhost" if server_name == "0.0.0.0" else server_name
+    path_to_local_server = "http://{}:{}/".format(url_host_name, port)
+    build_flask_app(interface, auth)
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
     if interface.save_to is not None:

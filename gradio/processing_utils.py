@@ -111,7 +111,7 @@ def audio_to_file(sample_rate, data, filename):
     audio = AudioSegment(
         data.tobytes(), 
         frame_rate=sample_rate,
-        sample_width=data.dtype.itemsize, 
+        sample_width=data.dtype.itemsize,
         channels=(1 if len(data.shape) == 1 else data.shape[1])
     )
     audio.export(filename, format="wav")
